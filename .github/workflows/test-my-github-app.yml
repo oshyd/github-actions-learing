@@ -1,0 +1,24 @@
+name: Run tests on staging
+on:
+  push:
+    branches:
+      - test
+
+jobs:
+  hello-world:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          # required
+          owner: oshyd
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          repository: oshyd/poc-azure-functions
+          ref: v1
+          # Make sure the value of GITHUB_TOKEN will not be persisted in repo's config
+
