@@ -3,9 +3,9 @@
 int main() {
     int i;
     for(; ;) {
-       printf("hello2\n");
+       printf("hello1\n");
        fflush(stdout);
        sleep(1);
     }       
 }
-
+//adad
