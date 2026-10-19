@@ -6,10 +6,10 @@
 #include <vector>
 
 // 1. Constructor with one argument is not explicit (noExplicitConstructor)
-// 2. Member not initialized in the constructor (uninitMemberVar)
+// 2. (fixed) Member not initialized in the constructor (uninitMemberVar)
 class Counter {
 public:
-    Counter(int start) : value(start) {}
+    Counter(int start) : value(start), step(1) {}
 
     int get() const { return value; }
 
@@ -63,11 +63,9 @@ int twice(int a) {
     return r;
 }
 
-// 10. C-style pointer cast (dangerousTypeCast, invalidPointerCast)
+// 10. (fixed) C-style pointer cast (dangerousTypeCast, invalidPointerCast)
 int truncate(double value) {
-    const double* p = &value;
-    const int* asInt = (const int*)p;
-    return *asInt != 0 ? static_cast<int>(value) : 0;
+    return static_cast<int>(value);
 }
 
 // 11. Local variable shadows an outer one (shadowVariable)
