@@ -3,6 +3,11 @@ name: deploy
 on:
   workflow_dispatch:
     inputs:
+      trace:
+        type: boolean
+        description: Print Tracing Logs
+        required: false
+        default: false
       environment:
         description: 'Environment to run tests against'
         type: environment
@@ -23,24 +28,28 @@ jobs:
     steps:
       -
        uses: actions/checkout@v3
-      - 
-       name: get certs
-       env:
-        DOCKER_CA_PEM: "${{ secrets.DOCKER_CA_PEM }}"
-        DOCKER_CLIENT_CERT_PEM: "${{ secrets.DOCKER_CLIENT_CERT_PEM }}"
-        DOCKER_CLIENT_KEY_PEM: "${{ secrets.DOCKER_CLIENT_KEY_PEM }}"
-       run: |
-            echo "$DOCKER_CA_PEM" > ca.pem
-            echo "$DOCKER_CLIENT_CERT_PEM" > client-cert.pem
-            echo "$DOCKER_CLIENT_KEY_PEM" > client-key.pem
-      - 
-        name: check docker connection
-        env:
-          DOCKER_REMOTE_IP: "${{ secrets.DOCKER_REMOTE_IP }}"
-        run: |
-            echo ${{ secrets.DOCKER_REMOTE_IP }}
-            echo $DOCKER_REMOTE_IP
-            docker --tlsverify --tlscacert=ca.pem --tlscert=client-cert.pem --tlskey=client-key.pem -H=$DOCKER_REMOTE_IP:2375 version\
+       with:
+        clean: true
+#       - 
+#        name: get certs
+#        working-directory: scripts
+#        env:
+#         DOCKER_CA_PEM: "${{ secrets.DOCKER_CA_PEM }}"
+#         DOCKER_CLIENT_CERT_PEM: "${{ secrets.DOCKER_CLIENT_CERT_PEM }}"
+#         DOCKER_CLIENT_KEY_PEM: "${{ secrets.DOCKER_CLIENT_KEY_PEM }}"
+#        run: |
+#             echo "$DOCKER_CA_PEM" > ca.pem
+#             echo "$DOCKER_CLIENT_CERT_PEM" > client-cert.pem
+#             echo "$DOCKER_CLIENT_KEY_PEM" > client-key.pem
+#       - 
+#         name: check docker connection
+#         working-directory: scripts
+#         env:
+#           DOCKER_REMOTE_IP: "${{ secrets.DOCKER_REMOTE_IP }}"
+#         run: |
+#             echo ${{ secrets.DOCKER_REMOTE_IP }}
+#             echo $DOCKER_REMOTE_IP
+#             docker --tlsverify --tlscacert=ca.pem --tlscert=client-cert.pem --tlskey=client-key.pem -H=$DOCKER_REMOTE_IP:2375 version    
       -
         name: Log in to the Container registry
         uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
@@ -50,11 +59,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}   
       - 
         name: deploy application
+        working-directory: scripts
         env:
+          PRIVATE_SSH_KEY: "${{ secrets.PRIVATE_SSH_KEY }}"
+          USER: "azureuser"
           DOCKER_REMOTE_IP: "${{ secrets.DOCKER_REMOTE_IP }}"
-          registry: ${{ env.REGISTRY }}
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          REGISTRY_URL: "${{ env.REGISTRY }}"
+          IMAGE_NAME: "${{ env.IMAGE_NAME }}"
+          TAG: "dev"
         run: |
-            docker --host tcp://$DOCKER_REMOTE_IP:2375 --tlsverify --tlscacert "ca.pem" --tlscert "client-cert.pem" --tlskey "client-key.pem"  pull $registry/$IMAGE_NAME:dev
-            echo "IMAGE_NAME=\"$registry/$IMAGE_NAME:dev\"" > .env
-            docker-compose --host tcp://$DOCKER_REMOTE_IP:2375 --tlsverify --tlscacert "ca.pem" --tlscert "client-cert.pem" --tlskey "client-key.pem" images
+            bash deploy.sh "$PRIVATE_SSH_KEY" "$USER" "$DOCKER_REMOTE_IP" "$REGISTRY_URL" "$IMAGE_NAME" "$TAG"

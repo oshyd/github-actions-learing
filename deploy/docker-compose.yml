@@ -1,5 +1,15 @@
-version: "3.6"
+version: "3"
 services:
-  hello:
-    restart: unless-stopped
-    image: ${IMAGE_NAME}
+  hello2:
+    restart: on-failure
+    image: ${IMAGE}
+    pull_policy: always
+    deploy:
+      replicas: 2
+      update_config:
+        failure_action: rollback
+        order: stop-first
+        delay: 1s
+      rollback_config:
+        order: stop-first
+        
